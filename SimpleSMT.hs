@@ -1,6 +1,7 @@
 {-# LANGUAGE Safe #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 -- | A module for interacting with an SMT solver, using SmtLib-2 format.
 module SimpleSMT
   (
@@ -261,6 +262,10 @@ readSExpr txt     = case break end txt of
 
 
 --------------------------------------------------------------------------------
+data MissingResponse = MissingResponse
+instance Show MissingResponse where
+  show MissingResponse = "Missing response from solver"
+instance X.Exception MissingResponse
 
 -- | An interactive solver process.
 data Solver = Solver
@@ -317,6 +322,14 @@ newSolverNotify exe opts mbLog mbOnExit =
                     hFlush hIn
 
          command c =
+           X.handle ( \ (e::X.SomeException) -> do
+                        terminateProcess h *> waitAndCleanup
+                        X.throw e
+                    ) $
+           X.handle ( \ (e::X.IOException) -> do
+                        terminateProcess h *> waitAndCleanup
+                        X.throw MissingResponse
+                    ) $
            do cmd c
               mb <- getResponse
               case mb of
