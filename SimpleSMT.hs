@@ -139,6 +139,9 @@ module SimpleSMT
     -- ** Arrays
   , select
   , store
+
+    -- ** Custom Exceptions
+  , MissingResponse (..)
   ) where
 
 import Prelude hiding (not, and, or, abs, div, mod, concat, const)
